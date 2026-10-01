@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SingleLab - Algorithmic Software & Geometric Algorithm</title>
+    <!-- استيراد الخطوط والأيقونات -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="logo2.png">
+    <style>
+        /* تعريف متغيرات الألوان للوضع الداكن والفاتح */
+        [data-theme="dark"] {
+            --bg-deep: #080d16;
+            --bg-card: rgba(18, 27, 42, 0.8);
+            --steel-blue: #2c4c64;
+            --accent-cyan: #38bdf8;
+            --highlight-glow: rgba(56, 189, 248, 0.4);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border-color: rgba(56, 189, 248, 0.25);
+            --input-bg: rgba(10, 16, 26, 0.85);
+            --countdown-bg: rgba(10, 16, 26, 0.7);
+        }
+
+        [data-theme="light"] {
+            --bg-deep: #eef2f6;
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --steel-blue: #32526b;
+            --accent-cyan: #0284c7;
+            --highlight-glow: rgba(2, 132, 199, 0.25);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: rgba(2, 132, 199, 0.2);
+            --input-bg: rgba(241, 245, 249, 0.9);
+            --countdown-bg: rgba(255, 255, 255, 0.85);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Cairo', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* تثبيت الارتفاع ليساوي الشاشة تماماً ومنع السكرول */
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            max-height: 100vh;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 1. تأثير إضاءة الماوس التفاعلي على الخلفية */
+        .mouse-glow {
+            position: absolute;
+            width: 550px;
+            height: 550px;
+            background: radial-gradient(circle, var(--highlight-glow) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 0;
+            transition: opacity 0.3s;
+            filter: blur(50px);
+        }
+
+        /* 2. خلفية هندسية متحركة بالكامل مع الجسيمات */
+        .animated-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            opacity: 0.35;
+            animation: floatParticle 10s infinite linear;
+        }
+
+        @keyframes floatParticle {
+            0% { transform: translateY(105vh) scale(0.5); opacity: 0; }
+            50% { opacity: 0.6; }
+            100% { transform: translateY(-10vh) scale(1.3); opacity: 0; }
+        }
+
+        /* شريط الأدوات العلوي */
+        .top-controls {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            right: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .control-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            backdrop-filter: blur(12px);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .control-btn:hover {
+            border-color: var(--accent-cyan);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 12px 25px var(--highlight-glow);
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 660px;
+            padding: 10px 20px;
+            text-align: center;
+        }
+
+        /* 3. بطاقة المحتوى (ثابتة تماماً ومستقرة بدون حركة ميلان) */
+        .main-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 26px;
+            padding: 35px 30px;
+            backdrop-filter: blur(25px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2),
+                        inset 0 1px 0 var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+        }
+
+        /* إطار الشعار الفاخر */
+        .logo-wrapper {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 18px auto;
+        }
+
+        .logo-frame {
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 10px;
+            box-shadow: 0 0 25px var(--highlight-glow);
+            border: 2px solid var(--steel-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.4s ease;
+        }
+
+        .logo-wrapper:hover .logo-frame {
+            transform: scale(1.06) rotate(2deg);
+        }
+
+        .logo-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* شارة الحالة */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--countdown-bg);
+            border: 1px solid var(--border-color);
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .status-badge .dot {
+            width: 7px;
+            height: 7px;
+            background-color: var(--accent-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-cyan);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        /* العناوين */
+        h1 {
+            font-size: 2.3rem;
+            font-weight: 900;
+            margin-bottom: 2px;
+            background: linear-gradient(135deg, var(--text-main) 40%, var(--accent-cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tagline {
+            color: var(--accent-cyan);
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .sub-tagline {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 300;
+            margin-bottom: 18px;
+        }
+
+        .teaser-text {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 22px;
+            max-width: 540px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* العداد التنازلي */
+        .countdown-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .countdown-box {
+            background: var(--countdown-bg);
+            border: 1px solid var(--border-color);
+            padding: 12px 8px;
+            border-radius: 14px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .countdown-box:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 10px 25px var(--highlight-glow);
+        }
+
+        .countdown-number {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--accent-cyan);
+            display: block;
+        }
+
+        .countdown-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 3px;
+            text-transform: uppercase;
+        }
+
+        /* نموذج الإشعار */
+        .notify-form {
+            display: flex;
+            gap: 10px;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .notify-form input {
+            flex-grow: 1;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            padding: 12px 18px;
+            border-radius: 12px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .notify-form input:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px var(--highlight-glow);
+        }
+
+        .notify-form button {
+            background: linear-gradient(135deg, var(--steel-blue), var(--accent-cyan));
+            color: #ffffff;
+            border: none;
+            padding: 12px 22px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 6px 20px var(--highlight-glow);
+            white-space: nowrap;
+        }
+
+        .notify-form button:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        .success-message {
+            display: none;
+            color: #10b981;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 12px;
+            background: rgba(16, 185, 129, 0.1);
+            padding: 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        /* روابط التواصل */
+        .social-links {
+            margin-top: 22px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .social-links a {
+            width: 38px;
+            height: 38px;
+            background: var(--countdown-bg);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: var(--text-muted);
+            font-size: 1rem;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .social-links a:hover {
+            background: var(--accent-cyan);
+            color: #ffffff;
+            border-color: var(--accent-cyan);
+            transform: translateY(-4px) scale(1.1);
+            box-shadow: 0 8px 20px var(--highlight-glow);
+        }
+
+        /* التجاوب مع الجوال */
+        @media (max-width: 600px) {
+            .top-controls { top: 15px; left: 15px; right: 15px; }
+            .main-card { padding: 25px 15px; }
+            h1 { font-size: 1.8rem; }
+            .notify-form { flex-direction: column; }
+            .countdown-container { gap: 6px; }
+            .countdown-number { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- إضاءة الماوس الخلفية المتتبعة -->
+    <div class="mouse-glow" id="mouseGlow"></div>
+
+    <!-- خلفية الجسيمات المتحركة الديناميكية -->
+    <div class="animated-bg" id="particlesBg"></div>
+
+    <!-- شريط التحكم العلوي -->
+    <div class="top-controls">
+        <button class="control-btn" onclick="toggleTheme()">
+            <i class="fas fa-moon" id="themeIcon"></i> <span id="themeText">الوضع الداكن</span>
+        </button>
+        <button class="control-btn" onclick="toggleLanguage()">
+            <i class="fas fa-globe"></i> <span id="langText">English</span>
+        </button>
+    </div>
+
+    <div class="container">
+        <div class="main-card">
+            <!-- شارة الحالة -->
+            <div class="status-badge">
+                <span class="dot"></span>
+                <span data-key="status">قريباً - إطلاق المنصة الجديدة</span>
+            </div>
+
+            <!-- الشعار -->
+            <div class="logo-wrapper">
+                <div class="logo-frame">
+                    <img src="logo.png" alt="SingleLab Logo">
+                </div>
+            </div>
+
+            <!-- العناوين -->
+            <h1>SingleLab</h1>
+            <div class="tagline">Algorithmic Software</div>
+            <div class="sub-tagline">Geometric Algorithm</div>
+
+            <!-- الوصف التشويقي -->
+            <p class="teaser-text" data-key="teaser">
+                نحن نعيد تعريف الحلول البرمجية عبر خوارزميات هندسية متقدمة ودقيقة. استعد لتجربة تكنولوجية استثنائية تغير مقاييس الكفاءة والأداء.
+            </p>
+
+            <!-- العداد التنازلي -->
+            <div class="countdown-container">
+                <div class="countdown-box">
+                    <span class="countdown-number" id="days">30</span>
+                    <span class="countdown-label" data-key="daysLbl">يوماً</span>
+                </div>
+                <div class="countdown-box">
+                    <span class="countdown-number" id="hours">00</span>
+                    <span class="countdown-label" data-key="hoursLbl">ساعة</span>
+                </div>
+                <div class="countdown-box">
+                    <span class="countdown-number" id="minutes">00</span>
+                    <span class="countdown-label" data-key="minsLbl">دقيقة</span>
+                </div>
+                <div class="countdown-box">
+                    <span class="countdown-number" id="seconds">00</span>
+                    <span class="countdown-label" data-key="secsLbl">ثانية</span>
+                </div>
+            </div>
+
+            <!-- نموذج الاشتراك -->
+            <form id="subscribeForm" onsubmit="handleSubscription(event)">
+                <div class="notify-form">
+                    <input type="email" id="userEmail" data-placeholder="emailPlaceholder" placeholder="أدخل بريدك الإلكتروني ليصلك الإطلاق..." required>
+                    <button type="submit" data-key="btnText">أخبرني عند الإطلاق</button>
+                </div>
+            </form>
+            <div class="success-message" id="successMsg">
+                <i class="fas fa-check-circle"></i> <span data-key="successText">تم تسجيل بريدك بنجاح! سنقوم بإعلامك فور انطلاق المنصة.</span>
+            </div>
+
+            <!-- التواصل -->
+            <div class="social-links">
+                <a href="#" target="_blank" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                <a href="#" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+                <a href="#" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- كود الجافاسكريبت للخلفية المتحركة وإضاءة الماوس -->
+    <script>
+        // 1. إنشاء جسيمات خلفية متحركة ديناميكياً
+        const particlesContainer = document.getElementById('particlesBg');
+        for (let i = 0; i < 22; i++) {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            const size = Math.random() * 5 + 2;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.left = `${Math.random() * 100}%`;
+            particle.style.animationDuration = `${Math.random() * 8 + 6}s`;
+            particle.style.animationDelay = `${Math.random() * 5}s`;
+            particlesContainer.appendChild(particle);
+        }
+
+        // 2. تتبع إضاءة الماوس في الخلفية فقط دون تحريك الكارت
+        const mouseGlow = document.getElementById('mouseGlow');
+
+        window.addEventListener('mousemove', (e) => {
+            mouseGlow.style.left = `${e.clientX}px`;
+            mouseGlow.style.top = `${e.clientY}px`;
+        });
+
+        // 3. قاموس الترجمة وتغيير اللغة
+        const translations = {
+            ar: {
+                themeDark: "الوضع الداكن",
+                themeLight: "الوضع الفاتح",
+                status: "قريباً - إطلاق المنصة الجديدة",
+                teaser: "نحن نعيد تعريف الحلول البرمجية عبر خوارزميات هندسية متقدمة ودقيقة. استعد لتجربة تكنولوجية استثنائية تغير مقاييس الكفاءة والأداء.",
+                daysLbl: "يوماً",
+                hoursLbl: "ساعة",
+                minsLbl: "دقيقة",
+                secsLbl: "ثانية",
+                emailPlaceholder: "أدخل بريدك الإلكتروني ليصلك الإطلاق...",
+                btnText: "أخبرني عند الإطلاق",
+                successText: "تم تسجيل بريدك بنجاح! سنقوم بإعلامك فور انطلاق المنصة."
+            },
+            en: {
+                themeDark: "Dark Mode",
+                themeLight: "Light Mode",
+                status: "Coming Soon - New Platform Launch",
+                teaser: "We are redefining software solutions through advanced and precise geometric algorithms. Get ready for an exceptional tech experience.",
+                daysLbl: "Days",
+                hoursLbl: "Hours",
+                minsLbl: "Mins",
+                secsLbl: "Secs",
+                emailPlaceholder: "Enter your email for updates...",
+                btnText: "Notify Me",
+                successText: "Email registered successfully! We will notify you upon launch."
+            }
+        };
+
+        let currentLang = 'ar';
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'ar' ? 'en' : 'ar';
+            const htmlTag = document.documentElement;
+            
+            if (currentLang === 'en') {
+                htmlTag.setAttribute('lang', 'en');
+                htmlTag.setAttribute('dir', 'ltr');
+                document.getElementById('langText').innerText = 'العربية';
+            } else {
+                htmlTag.setAttribute('lang', 'ar');
+                htmlTag.setAttribute('dir', 'rtl');
+                document.getElementById('langText').innerText = 'English';
+            }
+
+            document.querySelectorAll('[data-key]').forEach(el => {
+                const key = el.getAttribute('data-key');
+                if (translations[currentLang][key]) {
+                    el.innerText = translations[currentLang][key];
+                }
+            });
+
+            const emailInput = document.getElementById('userEmail');
+            emailInput.placeholder = translations[currentLang][emailInput.getAttribute('data-placeholder')];
+        }
+
+        function toggleTheme() {
+            const htmlTag = document.documentElement;
+            const currentTheme = htmlTag.getAttribute('data-theme');
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+
+            if (currentTheme === 'dark') {
+                htmlTag.setAttribute('data-theme', 'light');
+                themeIcon.className = 'fas fa-sun';
+                themeText.innerText = currentLang === 'ar' ? translations.ar.themeLight : translations.en.themeLight;
+            } else {
+                htmlTag.setAttribute('data-theme', 'dark');
+                themeIcon.className = 'fas fa-moon';
+                themeText.innerText = currentLang === 'ar' ? translations.ar.themeDark : translations.en.themeDark;
+            }
+        }
+
+        // 4. العداد التنازلي
+        const targetTime = new Date().getTime() + (30 * 24 * 60 * 60 * 1000);
+
+        setInterval(() => {
+            const now = new Date().getTime();
+            const difference = targetTime - now;
+
+            const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+            document.getElementById("days").innerText = String(days).padStart(2, '0');
+            document.getElementById("hours").innerText = String(hours).padStart(2, '0');
+            document.getElementById("minutes").innerText = String(minutes).padStart(2, '0');
+            document.getElementById("seconds").innerText = String(seconds).padStart(2, '0');
+        }, 1000);
+
+        function handleSubscription(e) {
+            e.preventDefault();
+            const emailInput = document.getElementById('userEmail');
+            if(emailInput.value) {
+                document.getElementById('subscribeForm').style.display = 'none';
+                document.getElementById('successMsg').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
